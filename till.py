@@ -32,7 +32,6 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 
-
 #Reminder: Please install package DotEnv and use that to store your token as it is important to keep your bot token a secret. I'll tell you about that later for now play around these snippets
 
 intents = nextcord.Intents.default()
@@ -70,11 +69,6 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    if "*ivantill" in message.content.lower():
-        await message.delete()
-
-    await bot.process_commands(message)
-
     if "gnarly" in message.content.lower():
         await message.channel.send("BOBA TEA 🗣️ (GNARLY)")
         await asyncio.sleep(2)
@@ -91,6 +85,16 @@ async def on_message(message):
         await message.channel.send("OH MY GOD, IS THIS REAL? 🗣️ (GNARLY)")
         await asyncio.sleep(2)  
         await message.channel.send("EVERYTHING'S GNARLY!!! 👽💚")
+
+    trigger = message.content.lower()
+    if trigger in autoresponders:
+        response = autoresponders[trigger]
+        await message.channel.send(response)
+
+    if "hi till" in message.content.lower():
+        await message.channel.send(f"Hi {message.author.display_name}!")
+
+    await bot.process_commands(message)
 
 # ----------------------------------
 
@@ -124,19 +128,6 @@ async def randomgif(ctx):
 @bot.slash_command(name="randomgif", description="Random gif setup")
 async def randomgif_slash(interaction: nextcord.Interaction):
     await interaction.response.send_message(random.choice(random_gifs))
-
-# ----------------------------------
-# bot says hi using user's nickname
-
-@bot.command()
-async def hi(ctx):
-    nickname = ctx.author.display_name
-    await ctx.send(f"Hi {nickname}!")
-
-@bot.slash_command(name="hi", description="Bot says hi")
-async def hi_slash(interaction: nextcord.Interaction):
-    nickname = interaction.user.display_name
-    await interaction.response.send_message(f"Hi {nickname}!")
 
 # ----------------------------------
 
@@ -595,8 +586,8 @@ async def randomlyrics_slash(interaction: nextcord.Interaction):
 
 # -----------------------------------
 
-#bot manda un mensaje a las 6am cada dia
-async def daily_message():
+#bot manda un mensaje a las 9am cada dia
+async def daily_message_day():
     await bot.wait_until_ready()
     channel = bot.get_channel(1387258797701070918)  # replace with your channel ID
     while not bot.is_closed():
@@ -622,8 +613,54 @@ async def daily_message():
             #meaning of in in check:
             #the in operator checks if the content of the message is present in the provided list of greetings.
 
-bot.loop.create_task(daily_message())
+bot.loop.create_task(daily_message_day())
 
+# -----------------------------------
+# bot says gn
+
+async def daily_message_night():
+    await bot.wait_until_ready()
+    channel = bot.get_channel(1387258797701070918)  # replace with your channel ID
+    while not bot.is_closed():
+        now = datetime.datetime.now()
+        target = now.replace(hour=21, minute=0, second=0, microsecond=0)
+        if now > target:
+            target += datetime.timedelta(days=1)
+        wait_seconds = (target - now).total_seconds()
+        await asyncio.sleep(wait_seconds)
+        await channel.send("Good night! You guys should sleep already >:P!!!")
+
+        #answers to message sent after daily message
+        def check(msg):
+            return msg.channel == channel and msg.author != bot.user and msg.content.lower() in ["good night till", "gn till", "nighty till", "gn"]
+        try:
+            msg = await bot.wait_for('message', check=check, timeout=3600) # wait for 1 hour
+            await channel.send(f"Good night {msg.author.mention}! Rest well! 💚")
+        except asyncio.TimeoutError:
+            await channel.send("Looks like no one responded... Hope you all have a great sleep anyway! 💚")
+
+            #meaning of content.lower() in check:
+            #this checks if the message content is one of the specified greetings, ignoring case sensitivity.
+            #meaning of in in check:
+            #the in operator checks if the content of the message is present in the provided list of greetings.
+
+bot.loop.create_task(daily_message_night())
+
+# -----------------------------------
+#make and store autoresponders with triggers and responses
+
+autoresponders = {}
+@bot.command()
+async def setautoresponder(ctx, trigger: str, *, response: str):
+    autoresponders[trigger.lower()] = response
+    await ctx.send(f"Autoresponder set for trigger: '{trigger}'")
+
+@bot.slash_command(name="setautoresponder", description="Set an autoresponder")
+async def setautoresponder_slash(interaction: nextcord.Interaction, trigger: str, *, response: str):
+    autoresponders[trigger.lower()] = response
+    await interaction.response.send_message(f"Autoresponder set for trigger: '{trigger}'")
+
+# ------------------------------------
 
 
 # -----------------------------------
