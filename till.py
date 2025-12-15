@@ -622,7 +622,7 @@ bot.loop.create_task(daily_message_day())
 
 async def daily_message_night():
     await bot.wait_until_ready()
-    channel = bot.get_channel(1387258797701070918)  # replace with your channel ID
+    channel = bot.get_channel(chnl)  # replace with your channel ID
     while not bot.is_closed():
         now = datetime.datetime.now()
         target = now.replace(hour=21, minute=0, second=0, microsecond=0)
@@ -668,4 +668,5 @@ async def setautoresponder_slash(interaction: nextcord.Interaction, trigger: str
 # -----------------------------------
 
 bot.run(TOKEN)
+
 
