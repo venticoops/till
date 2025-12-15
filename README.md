@@ -1,4 +1,4 @@
-<h1>TILL : IMPORTANT NOTES!!!</h1>
+<h1 align=center>TILL : IMPORTANT NOTES!!!</h1>
 <p align=center>
 UPDATED up to 15th dec <br>
 original folder looks like this as for 15th dec  
