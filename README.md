@@ -7,5 +7,5 @@ original folder looks like this as for 15th dec
 DON'T STEAL, USE FOR PRACTICE
 </p>
 <p align=center>
-Till is a Discord bot made with love, its purpose is to entertain and help its creator comprehend the nextcord framework better.*
+Till is a Discord bot made with love, its purpose is to entertain and help its creator comprehend the nextcord framework better.
 </p>
