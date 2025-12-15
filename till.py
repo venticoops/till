@@ -2,8 +2,9 @@
 # This file is made by REI otherwise known as KeiNeroKami in Github
 # ====================<REIME>====================
 # This are snippets for making a bot/App in Discord
-# Made: 11, 21, 25
 # ===============================================
+
+# BASED FROM REI'S SNIPPET, REST OF CODE MADE BY VENTICOOPS FOR FUN
 
 import code
 from multiprocessing import process
@@ -31,6 +32,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
+chnl = os.getenv("CHANNEL")
 
 #Reminder: Please install package DotEnv and use that to store your token as it is important to keep your bot token a secret. I'll tell you about that later for now play around these snippets
 
@@ -589,7 +591,7 @@ async def randomlyrics_slash(interaction: nextcord.Interaction):
 #bot manda un mensaje a las 9am cada dia
 async def daily_message_day():
     await bot.wait_until_ready()
-    channel = bot.get_channel(1387258797701070918)  # replace with your channel ID
+    channel = bot.get_channel(chnl)  # replace with your channel ID
     while not bot.is_closed():
         now = datetime.datetime.now()
         target = now.replace(hour=9, minute=0, second=0, microsecond=0)
@@ -666,3 +668,4 @@ async def setautoresponder_slash(interaction: nextcord.Interaction, trigger: str
 # -----------------------------------
 
 bot.run(TOKEN)
+
