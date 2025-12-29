@@ -1,9 +1,9 @@
 <h1 align=center>TILL : IMPORTANT NOTES!!!</h1>
 <p align=center>
-UPDATED up to 15th dec <br>
-original folder looks like this as for 15th dec  
+UPDATED up to 28th dec <br>
+original folder looks like this as for 28th dec  
 <br><br>
-<img width="667" height="199" alt="image" src="https://github.com/user-attachments/assets/9a30c411-f8dc-4606-a284-28257551274c" /><br><br>
+<img alt="image" src="https://github.com/user-attachments/assets/49f067e6-5e2e-4923-8a57-7aa23b0b0ee8"/><br><br>
 DON'T STEAL, USE FOR PRACTICE
 </p>
 <p align=center>
