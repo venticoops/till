@@ -2,9 +2,9 @@
 # This file is made by REI otherwise known as KeiNeroKami in Github
 # ====================<REIME>====================
 # This are snippets for making a bot/App in Discord
+# Made: 11, 21, 25
 # ===============================================
 
-# BASED FROM REI'S SNIPPET, REST OF CODE MADE BY VENTICOOPS FOR FUN
 
 import code
 from multiprocessing import process
@@ -27,17 +27,19 @@ from datetime import timedelta
 from PIL import Image, ImageDraw, ImageFont
 import os
 from dotenv import load_dotenv
+import nacl
+import time
 
 # ----------------------------------
 
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
-chnl = os.getenv("CHANNEL")
 
 #Reminder: Please install package DotEnv and use that to store your token as it is important to keep your bot token a secret. I'll tell you about that later for now play around these snippets
 
 intents = nextcord.Intents.default()
 intents.message_content = True
+intents.voice_states = True
 
 bot = commands.Bot(command_prefix="*", intents=intents)
 
@@ -60,6 +62,22 @@ async def on_ready():
     print("synced!")
 
 # ----------------------------------
+
+
+# ===============================
+# JSON HELPERS
+# ===============================
+
+def load_json(path, default):
+    if not os.path.exists(path):
+        return default
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_json(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
 
 # global variables
 
@@ -87,11 +105,6 @@ async def on_message(message):
         await message.channel.send("OH MY GOD, IS THIS REAL? 🗣️ (GNARLY)")
         await asyncio.sleep(2)  
         await message.channel.send("EVERYTHING'S GNARLY!!! 👽💚")
-
-    trigger = message.content.lower()
-    if trigger in autoresponders:
-        response = autoresponders[trigger]
-        await message.channel.send(response)
 
     if "hi till" in message.content.lower():
         await message.channel.send(f"Hi {message.author.display_name}!")
@@ -155,16 +168,21 @@ random_gifs_yawn = [
     ]
 
 
+COUNTERS_FILE = r"C:\Users\Usuario\Desktop\all\till\data\counters.json"
+counters = load_json(COUNTERS_FILE, {})
+
+def add_count(user_id: int, action: str):
+    uid = str(user_id)
+    if uid not in counters:
+        counters[uid] = {}
+    counters[uid][action] = counters[uid].get(action, 0) + 1
+    save_json(COUNTERS_FILE, counters)
+    return counters[uid][action]
+
 @bot.command()
-async def hug(ctx, member: nextcord.Member = None):
+async def hug(ctx, member: nextcord.Member):
+    count = add_count(ctx.author.id, "hug")
     membername = member.display_name if member else "themselves"
-    user_id = ctx.author.id
-
-    # increase count for this user
-    usage_count_hug[user_id] = usage_count_hug.get(user_id, 0) + 1
-
-    count = usage_count_hug[user_id]
-
     # default target is self
     if member is None:
         member = ctx.author
@@ -191,13 +209,11 @@ async def hug(ctx, member: nextcord.Member = None):
     await ctx.send(embed=embed, view=myview)
 
 @bot.slash_command(name="hug", description="Hug someone!")
-async def hug(interaction: nextcord.Interaction, member: nextcord.Member = None):
+async def hug_slash(interaction: nextcord.Interaction, member: nextcord.Member = None):
     membername = member.display_name if member else "themselves"
-    user_id = interaction.user.id
 
-    # increase count for this user
-    usage_count_hug[user_id] = usage_count_hug.get(user_id, 0) + 1
-    count = usage_count_hug[user_id]
+    count = add_count(interaction.user.id, "hug")
+
 
     # default target
     if member is None:
@@ -229,11 +245,7 @@ async def hug(interaction: nextcord.Interaction, member: nextcord.Member = None)
 @bot.command()
 async def yawn(ctx):
 
-    user_id = ctx.author.id
-    # increase count for this user
-    usage_count_yawn[user_id] = usage_count_yawn.get(user_id, 0) + 1
-
-    count = usage_count_yawn[user_id]
+    count = add_count(ctx.author.id, "yawn")
 
     # default target is self
 
@@ -246,11 +258,8 @@ async def yawn(ctx):
 
 @bot.slash_command(name="yawn", description="Yawn!")
 async def yawn(interaction: nextcord.Interaction):
-    user_id = interaction.user.id
+    count = add_count(interaction.user.id, "yawn")
 
-    # increase count for this user
-    usage_count_yawn[user_id] = usage_count_yawn.get(user_id, 0) + 1
-    count = usage_count_yawn[user_id]
 
     embed = Embed(title=f"{interaction.user.display_name} yawned!", description=f"{interaction.user.mention} has yawned {count} times", color=Color.teal())
     embed.set_image(random.choice(random_gifs_yawn))
@@ -282,51 +291,110 @@ async def keybtake_slash(interaction: nextcord.Interaction):
     await interaction.followup.send("https://i.postimg.cc/rpfbfqBR/169-sin-titulo-1.jpg")
 
 # ----------------------------------
-#stored embeds
-custom_embeds = {}
 
-#set retrievable embed
+def build_embed(data: dict) -> nextcord.Embed:
+    embed = nextcord.Embed(
+        title=data.get("title"),
+        description=data.get("description"),
+        color=data.get("color", 0)
+    )
+    if data.get("image_url"):
+        embed.set_image(url=data["image_url"])
+    return embed
+
+# ===============================
+# SET EMBED (PREFIX)
+# ===============================
+
+EMBEDS_FILE = r"C:\Users\Usuario\Desktop\all\till\data\embeds.json"
+
+# ===============================
+# LOAD EMBEDS
+# ===============================
+
+# estructura:
+# {
+#   "name": {
+#       "title": "...",
+#       "description": "...",
+#       "color": 123456,
+#       "image_url": "..."
+#   }
+# }
+
+custom_embeds = load_json(EMBEDS_FILE, {})
+
 @bot.command()
-async def setembed(ctx, name: str, title: str, description: str, color: int, image_url: str):
+async def setembed(ctx, name: str, title: str, description: str, color: int, image_url: str = None):
 
-    embed = nextcord.Embed(title=title, description=description, color=color)
-    embed.set_image(url=image_url)
+    custom_embeds[name] = {
+        "title": title,
+        "description": description,
+        "color": color,
+        "image_url": image_url
+    }
 
-    custom_embeds[name] = embed
+    save_json(EMBEDS_FILE, custom_embeds)
 
+    embed = build_embed(custom_embeds[name])
     await ctx.send(embed=embed)
-    await ctx.send(f"Embed saved as {name}! You can retrieve it later.")
-    
-# slash command version
+    await ctx.send(f"💾 Embed guardado como **{name}**")
+
+# ===============================
+# SET EMBED (SLASH)
+# ===============================
+
 @bot.slash_command(name="setembed", description="Set a retrievable embed")
-async def setembed_slash(interaction: nextcord.Interaction, name: str, title: str, description: str, color: int, image_url: str):
+async def setembed_slash(
+    interaction: nextcord.Interaction,
+    name: str,
+    title: str,
+    description: str,
+    color: int,
+    image_url: str = None
+):
 
-    embed = nextcord.Embed(title=title, description=description, color=color)
-    embed.set_image(url=image_url)
+    custom_embeds[name] = {
+        "title": title,
+        "description": description,
+        "color": color,
+        "image_url": image_url
+    }
 
-    custom_embeds[name] = embed
+    save_json(EMBEDS_FILE, custom_embeds)
 
+    embed = build_embed(custom_embeds[name])
     await interaction.response.send_message(embed=embed)
-    await interaction.followup.send(f"Embed saved as {name}! You can retrieve it later.")
+    await interaction.followup.send(f"💾 Embed guardado como **{name}**")
 
-# ----------------------------------
+# ===============================
+# GET EMBED (PREFIX)
+# ===============================
 
-#retrieve stored embed
 @bot.command()
 async def getembed(ctx, name: str):
-    embed = custom_embeds.get(name)
-    if embed:
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send(f"No embed found with the name '{name}'.")
+    data = custom_embeds.get(name)
+    if not data:
+        await ctx.send(f"❌ No embed found with the name `{name}`")
+        return
+
+    await ctx.send(embed=build_embed(data))
+
+# ===============================
+# GET EMBED (SLASH)
+# ===============================
 
 @bot.slash_command(name="getembed", description="Get a stored embed")
 async def getembed_slash(interaction: nextcord.Interaction, name: str):
-    embed = custom_embeds.get(name)
-    if embed:
-        await interaction.response.send_message(embed=embed)
-    else:
-        await interaction.response.send_message(f"No embed found with the name '{name}'.")
+    data = custom_embeds.get(name)
+    if not data:
+        await interaction.response.send_message(
+            f"❌ No embed found with the name `{name}`",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.send_message(embed=build_embed(data))
 
 # ----------------------------------
 
@@ -403,15 +471,7 @@ async def speed(ctx):
 async def speed_slash(interaction: nextcord.Interaction):
     await interaction.response.send_message("https://files.catbox.moe/an25jf.gif")
 
-#------------------------------------
 
-@bot.command()
-async def reminder(ctx):
-    await ctx.send(f"halo {ctx.author.mention}!! please remember to smile everyday and help other people smile too!")
-
-@bot.slash_command(name="reminder", description="tiny reminder")
-async def reminder_slash(interaction: nextcord.Interaction):
-    await interaction.response.send_message(f"halo {interaction.user.mention}!! please remember to smile everyday and help other people smile too!")
 # -----------------------------------
 
 @bot.command()
@@ -591,7 +651,7 @@ async def randomlyrics_slash(interaction: nextcord.Interaction):
 #bot manda un mensaje a las 9am cada dia
 async def daily_message_day():
     await bot.wait_until_ready()
-    channel = bot.get_channel(chnl)  # replace with your channel ID
+    channel = bot.get_channel(1387258797701070918)  # replace with your channel ID
     while not bot.is_closed():
         now = datetime.datetime.now()
         target = now.replace(hour=9, minute=0, second=0, microsecond=0)
@@ -622,7 +682,7 @@ bot.loop.create_task(daily_message_day())
 
 async def daily_message_night():
     await bot.wait_until_ready()
-    channel = bot.get_channel(chnl)  # replace with your channel ID
+    channel = bot.get_channel(1387258797701070918)  # replace with your channel ID
     while not bot.is_closed():
         now = datetime.datetime.now()
         target = now.replace(hour=21, minute=0, second=0, microsecond=0)
@@ -651,22 +711,29 @@ bot.loop.create_task(daily_message_night())
 # -----------------------------------
 #make and store autoresponders with triggers and responses
 
-autoresponders = {}
+AUTO_FILE = r"C:\Users\Usuario\Desktop\all\till\data\autoresponders.json"
+autoresponders = load_json(AUTO_FILE, {})
+
 @bot.command()
 async def setautoresponder(ctx, trigger: str, *, response: str):
     autoresponders[trigger.lower()] = response
-    await ctx.send(f"Autoresponder set for trigger: '{trigger}'")
+    save_json(AUTO_FILE, autoresponders)
+    await ctx.send(f"Autoresponder guardado para: `{trigger}`")
 
-@bot.slash_command(name="setautoresponder", description="Set an autoresponder")
-async def setautoresponder_slash(interaction: nextcord.Interaction, trigger: str, *, response: str):
-    autoresponders[trigger.lower()] = response
-    await interaction.response.send_message(f"Autoresponder set for trigger: '{trigger}'")
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
 
-# ------------------------------------
+    trigger = message.content.lower()
+    if trigger in autoresponders:
+        await message.channel.send(autoresponders[trigger])
+
+    await bot.process_commands(message)
+
+# ---------------------------------------------------
 
 
-# -----------------------------------
+
 
 bot.run(TOKEN)
-
-
