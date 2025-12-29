@@ -4,6 +4,7 @@ UPDATED up to 28th dec <br>
 original folder looks like this as for 28th dec  
 <br><br>
 <img alt="image" src="https://github.com/user-attachments/assets/49f067e6-5e2e-4923-8a57-7aa23b0b0ee8"/><br><br>
+  JSON files kinda messed up bcs of organization, please check that out, accepting help
 DON'T STEAL, USE FOR PRACTICE
 </p>
 <p align=center>
